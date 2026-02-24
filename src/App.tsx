@@ -7,31 +7,79 @@ import { parseTask, analyzeScheduleFromImage } from './services/gemini';
 import { format } from 'date-fns';
 import { requestNotificationPermission, scheduleTaskNotification, cancelTaskNotification } from './services/notifications';
 import { Preferences } from '@capacitor/preferences';
+import { registerPlugin } from '@capacitor/core';
+
+export interface RoomTaskPlugin {
+  insertTask(options: any): Promise<{success: boolean}>;
+  getTasks(): Promise<{tasks: any[]}>;
+  updateTask(options: any): Promise<{success: boolean}>;
+  deleteTask(options: {id: number}): Promise<{success: boolean}>;
+}
+const RoomTask = registerPlugin<RoomTaskPlugin>('RoomTask');
 
 function App() {
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    const saved = localStorage.getItem('tasks');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [tasks, setTasks] = useState<Task[]>([]);
   
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [loading, setLoading] = useState(false);
   const [quickAdd, setQuickAdd] = useState('');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editingDate, setEditingDate] = useState<string>('');
+  
+  const generateId = () => Math.floor(Math.random() * 2147483647);
+
+  // Synchronize with Native API Helper
+  const syncNativeTask = async (method: 'insert' | 'update' | 'delete', taskOrId: any) => {
+    try {
+      if (method === 'delete') {
+        await RoomTask.deleteTask({ id: taskOrId as number });
+      } else {
+        const payload = {
+          ...taskOrId,
+          recurringType: taskOrId.recurring?.type || 'none',
+          recurringDays: taskOrId.recurring?.days || [],
+          exceptions: taskOrId.exceptions || []
+        };
+        if (method === 'insert') await RoomTask.insertTask(payload);
+        if (method === 'update') await RoomTask.updateTask(payload);
+      }
+    } catch (e) {
+      console.warn("Native Sync Failed (or web env):", e);
+    }
+  };
+
+  const loadInitialTasks = async () => {
+    try {
+      const result = await RoomTask.getTasks();
+      // map from native flat model to TS nested model
+      const loaded: Task[] = result.tasks.map(t => ({
+        ...t,
+        recurring: {
+          type: t.recurring?.type || 'none',
+          days: t.recurring?.days as number[] | undefined
+        }
+      }));
+      setTasks(loaded);
+    } catch (e) {
+      console.warn("Room Tasks not available, falling back to LocalStorage.");
+      const saved = localStorage.getItem('tasks');
+      if (saved) setTasks(JSON.parse(saved));
+    }
+  };
 
   useEffect(() => {
-    // Save to LocalStorage (Web)
+    loadInitialTasks();
+  }, []);
+
+  useEffect(() => {
+    // Keep local storage & widget preferences up to date just in case
     localStorage.setItem('tasks', JSON.stringify(tasks));
-    // Save to Native Preferences (Widget Access)
     Preferences.set({ key: 'widget_tasks', value: JSON.stringify(tasks) });
   }, [tasks]);
 
   useEffect(() => {
     requestNotificationPermission();
   }, []);
-
-  const generateId = () => Math.floor(Math.random() * 2147483647);
 
   const handleQuickAdd = async () => {
     if (!quickAdd.trim()) return;
@@ -46,6 +94,8 @@ function App() {
         recurring: taskData.recurring || { type: 'none' },
         exceptions: []
       };
+      
+      await syncNativeTask('insert', newTask);
       setTasks(prev => [...prev, newTask]);
       scheduleTaskNotification(newTask);
       setQuickAdd('');
@@ -71,7 +121,7 @@ function App() {
         
         const filteredNewTasks: Task[] = [];
         
-        newTasksData.forEach((t: any) => {
+        for (const t of newTasksData) {
            const taskDate = t.date || today;
            
            // Check for duplicates (same title, same start time, same date)
@@ -90,10 +140,11 @@ function App() {
                recurring: { type: 'none' },
                exceptions: []
              };
+             await syncNativeTask('insert', nt);
              scheduleTaskNotification(nt);
              filteredNewTasks.push(nt);
            }
-        });
+        }
 
         if (filteredNewTasks.length > 0) {
           setTasks(prev => [...prev, ...filteredNewTasks]);
@@ -110,34 +161,32 @@ function App() {
     }
   };
 
-  const handleDelete = (id: number, dateToDelete?: string) => {
+  const handleDelete = async (id: number, dateToDelete?: string) => {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
 
     if (task.recurring && task.recurring.type !== 'none' && dateToDelete) {
       const choice = confirm("Delete only THIS instance? (Cancel to delete the ENTIRE series)");
       if (choice) {
-        // Delete only this instance (add to exceptions)
-        setTasks(prev => prev.map(t => {
-          if (t.id === id) {
-            return { ...t, exceptions: [...(t.exceptions || []), dateToDelete] };
-          }
-          return t;
-        }));
+        const updatedTask = { ...task, exceptions: [...(task.exceptions || []), dateToDelete] };
+        await syncNativeTask('update', updatedTask);
+        setTasks(prev => prev.map(t => t.id === id ? updatedTask : t));
         setEditingTask(null);
         return;
       }
     }
 
     if (confirm("Delete the entire task series?")) {
+      await syncNativeTask('delete', id);
       setTasks(prev => prev.filter(t => t.id !== id));
       cancelTaskNotification(id);
       setEditingTask(null);
     }
   };
 
-  const saveEditedTask = () => {
+  const saveEditedTask = async () => {
     if (editingTask) {
+      await syncNativeTask('update', editingTask);
       setTasks(prev => prev.map(t => t.id === editingTask.id ? editingTask : t));
       scheduleTaskNotification(editingTask);
       setEditingTask(null);
@@ -186,12 +235,12 @@ function App() {
             onChange={e => setQuickAdd(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleQuickAdd()}
             placeholder="✨ AI Quick Add (e.g., 'Lunch at 1pm')" 
-            className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+            className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
           />
           <button 
             onClick={handleQuickAdd}
             disabled={loading}
-            className="p-3 bg-blue-600 text-white rounded-2xl shadow-lg active:scale-95 transition-transform"
+            className="p-3 bg-blue-600 text-white rounded-xl shadow-lg active:scale-95 transition-transform"
           >
             {loading ? <Loader2 className="animate-spin" /> : <RotateCw size={20} />}
           </button>
