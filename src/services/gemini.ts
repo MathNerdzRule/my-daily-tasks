@@ -7,8 +7,8 @@ export async function parseTask(query: string) {
   if (!API_KEY) throw new Error("API Key missing");
 
   const model = genAI.getGenerativeModel(
-    { model: "gemini-flash-latest" },
-    { apiVersion: "v1" },
+    { model: "gemini-3-flash-preview" },
+    { apiVersion: "v1beta" },
   );
   const prompt = `
     Current Date/Time: ${new Date().toLocaleString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
@@ -43,8 +43,8 @@ export async function analyzeScheduleFromImage(base64Image: string) {
   if (!API_KEY) throw new Error("API Key missing");
 
   const model = genAI.getGenerativeModel(
-    { model: "gemini-flash-latest" },
-    { apiVersion: "v1" },
+    { model: "gemini-3-flash-preview" },
+    { apiVersion: "v1beta" },
   );
 
   const prompt = `
