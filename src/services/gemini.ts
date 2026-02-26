@@ -7,7 +7,7 @@ export async function parseTask(query: string) {
   if (!API_KEY) throw new Error("API Key missing");
 
   const model = genAI.getGenerativeModel(
-    { model: "gemini-3-flash-latest" },
+    { model: "gemini-flash-latest" },
     { apiVersion: "v1" },
   );
   const prompt = `
@@ -43,7 +43,7 @@ export async function analyzeScheduleFromImage(base64Image: string) {
   if (!API_KEY) throw new Error("API Key missing");
 
   const model = genAI.getGenerativeModel(
-    { model: "gemini-3-flash-latest" },
+    { model: "gemini-flash-latest" },
     { apiVersion: "v1" },
   );
 
