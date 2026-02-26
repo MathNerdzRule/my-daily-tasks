@@ -1,14 +1,17 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 export async function parseTask(query: string) {
   if (!API_KEY) throw new Error("API Key missing");
-  
-  const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" }, { apiVersion: 'v1beta' });
+
+  const model = genAI.getGenerativeModel(
+    { model: "gemini-3-flash-latest" },
+    { apiVersion: "v1" },
+  );
   const prompt = `
-    Current Date/Time: ${new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+    Current Date/Time: ${new Date().toLocaleString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
     Parse this user task input into a JSON object: "${query}"
     Use this structure:
     {
@@ -32,17 +35,20 @@ export async function parseTask(query: string) {
 
   const result = await model.generateContent(prompt);
   const responseText = result.response.text();
-  const cleanJson = responseText.replace(/```json|```/g, '').trim();
+  const cleanJson = responseText.replace(/```json|```/g, "").trim();
   return JSON.parse(cleanJson);
 }
 
 export async function analyzeScheduleFromImage(base64Image: string) {
   if (!API_KEY) throw new Error("API Key missing");
 
-  const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" }, { apiVersion: 'v1beta' });
-  
+  const model = genAI.getGenerativeModel(
+    { model: "gemini-3-flash-latest" },
+    { apiVersion: "v1" },
+  );
+
   const prompt = `
-    Current Date/Time: ${new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+    Current Date/Time: ${new Date().toLocaleString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
     Analyze this image of a schedule or calendar. 
     Extract all visible tasks and return them as a JSON array of objects with this structure:
     {
@@ -62,12 +68,12 @@ export async function analyzeScheduleFromImage(base64Image: string) {
     {
       inlineData: {
         data: base64Image,
-        mimeType: "image/jpeg"
-      }
-    }
+        mimeType: "image/jpeg",
+      },
+    },
   ]);
 
   const responseText = result.response.text();
-  const cleanJson = responseText.replace(/```json|```/g, '').trim();
+  const cleanJson = responseText.replace(/```json|```/g, "").trim();
   return JSON.parse(cleanJson);
 }
