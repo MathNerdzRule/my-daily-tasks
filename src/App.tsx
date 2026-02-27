@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Camera, CameraResultType } from '@capacitor/camera';
-import { Plus, Loader2, Camera as CameraIcon, Calendar as CalendarIcon, RotateCw, X, Bell, Trash2 } from 'lucide-react';
+import { Plus, Loader2, Camera as CameraIcon, RotateCw, X, Bell, Trash2, ChevronDown } from 'lucide-react';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
 import { TimelineView, Task } from './components/TimelineView';
 import { parseTask, analyzeScheduleFromImage } from './services/gemini';
@@ -26,6 +26,7 @@ function App() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editingDate, setEditingDate] = useState<string>('');
   const [isNewTask, setIsNewTask] = useState<boolean>(false);
+  const [showFullForm, setShowFullForm] = useState<boolean>(false);
   
   const generateId = () => Math.floor(Math.random() * 2147483647);
 
@@ -102,6 +103,7 @@ function App() {
       setQuickAdd('');
       setEditingTask(null);
       setIsNewTask(false);
+      setShowFullForm(false);
     } catch (e) {
       alert("AI Failed: " + (e as any).message);
     } finally {
@@ -168,6 +170,7 @@ function App() {
     if (isNewTask) {
       setEditingTask(null);
       setIsNewTask(false);
+      setShowFullForm(false);
       return;
     }
 
@@ -224,12 +227,14 @@ function App() {
 
   const handleEditTask = (task: Task, date: string) => {
     setIsNewTask(false);
+    setShowFullForm(true);
     setEditingTask(task);
     setEditingDate(date);
   };
 
   const handleAddNewTask = () => {
     setIsNewTask(true);
+    setShowFullForm(false);
     setEditingTask({
       id: generateId(),
       title: '',
@@ -262,16 +267,6 @@ function App() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        {/* Today Link */}
-        <div className="flex justify-center">
-          <button 
-            onClick={() => setSelectedDate(new Date())}
-            className="px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-all flex items-center gap-1"
-          >
-            <CalendarIcon size={12} /> Jump to Today
-          </button>
-        </div>
-
         {/* Content */}
         <TimelineView tasks={tasks} onEdit={handleEditTask} selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
       </main>
@@ -289,26 +284,40 @@ function App() {
                 </button>
               </div>
 
-              {isNewTask && (
+              {isNewTask && !showFullForm && (
+        <div className="space-y-4">
                 <div className="flex gap-2">
                   <input 
                     value={quickAdd}
                     onChange={e => setQuickAdd(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleQuickAdd()}
                     placeholder="✨ AI Quick Add..." 
-                    className="flex-1 bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                   />
                   <button 
                     onClick={handleQuickAdd}
                     disabled={loading}
                     className="p-3 bg-blue-600 text-white rounded-xl shadow-lg active:scale-95 transition-transform"
                   >
-                    {loading ? <Loader2 className="animate-spin" /> : <RotateCw size={20} />}
+                    {loading ? <Loader2 className="animate-spin" /> : <Plus size={20} />}
                   </button>
                 </div>
+                
+                <div className="flex justify-center">
+                  <button 
+                    onClick={() => setShowFullForm(true)}
+                    className="flex flex-col items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-2"
+                  >
+                    Enter task details manually
+                    <ChevronDown size={16} />
+                  </button>
+                </div>
+        </div>
               )}
 
-              <div className="space-y-4">
+              {(!isNewTask || showFullForm) && (
+              <>
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Title</label>
                   <input 
@@ -426,6 +435,8 @@ function App() {
                   {isNewTask ? 'Add Task' : 'Save Changes'}
                 </button>
               </div>
+              </>
+              )}
             </div>
           </div>
         </div>

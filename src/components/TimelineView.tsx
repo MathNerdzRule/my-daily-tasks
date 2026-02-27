@@ -97,8 +97,15 @@ export const TimelineView: React.FC<{
           <p className="text-sm font-bold text-slate-900 dark:text-white">
             {format(selectedDate, 'EEEE, MMM do')}
           </p>
-          {dateKey === format(new Date(), 'yyyy-MM-dd') && (
-            <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Today</p>
+          {dateKey === format(new Date(), 'yyyy-MM-dd') ? (
+            <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mt-1">Today</p>
+          ) : (
+            <button 
+              onClick={() => setSelectedDate(new Date())}
+              className="text-[10px] font-bold text-blue-500 uppercase tracking-widest hover:underline mt-1"
+            >
+              Jump to Today
+            </button>
           )}
         </div>
         <button 
@@ -111,7 +118,7 @@ export const TimelineView: React.FC<{
 
       <div 
         ref={scrollContainerRef}
-        className="relative w-full h-[60vh] bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-y-auto scroll-smooth"
+        className="relative w-full h-[74vh] bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-y-auto scroll-smooth"
       >
         <div className="relative h-[1440px] w-full">
           {hours.map(h => (
