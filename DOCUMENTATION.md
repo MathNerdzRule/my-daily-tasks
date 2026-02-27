@@ -24,6 +24,12 @@
 - **Action**: Replaced the previous `VITE_GEMINI_API_KEY` with a new key in the `.env` file (`AIzaSyDKvO...`). Verified that the API key is strictly maintained within `.env` and is not hard-coded in the project source (`services/gemini.ts` injects it via Vite). Rebuilt the web app, synced Capacitor assets, built the debug APK, and successfully ran wireless ADB deployment to the phone.
 - **Status**: Done.
 
+## Timeline & Modal UI Enhancements
+
+- **Role**: Dev
+- **Action**: Modified the `TimelineView.tsx` to expand the viewport height and conditionally show the "Jump to Today" link beneath the current date if it is not today. In the task modal (`App.tsx`), implemented a toggle state `showFullForm` to exclusively show the AI Quick Add input and button initially, with a "Enter task details manually" chevron toggle leading to the detailed form fields.
+- **Status**: Done.
+
 ## Unified Task Modal & Quick Add
 
 - **Role**: Dev
