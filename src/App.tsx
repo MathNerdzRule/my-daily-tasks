@@ -25,6 +25,7 @@ function App() {
   const [quickAdd, setQuickAdd] = useState('');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editingDate, setEditingDate] = useState<string>('');
+  const [isNewTask, setIsNewTask] = useState<boolean>(false);
   
   const generateId = () => Math.floor(Math.random() * 2147483647);
 
@@ -99,6 +100,8 @@ function App() {
       setTasks(prev => [...prev, newTask]);
       scheduleTaskNotification(newTask);
       setQuickAdd('');
+      setEditingTask(null);
+      setIsNewTask(false);
     } catch (e) {
       alert("AI Failed: " + (e as any).message);
     } finally {
@@ -162,6 +165,12 @@ function App() {
   };
 
   const handleDelete = async (id: number, dateToDelete?: string) => {
+    if (isNewTask) {
+      setEditingTask(null);
+      setIsNewTask(false);
+      return;
+    }
+
     const task = tasks.find(t => t.id === id);
     if (!task) return;
 
@@ -186,10 +195,17 @@ function App() {
 
   const saveEditedTask = async () => {
     if (editingTask) {
-      await syncNativeTask('update', editingTask);
-      setTasks(prev => prev.map(t => t.id === editingTask.id ? editingTask : t));
-      scheduleTaskNotification(editingTask);
+      if (isNewTask) {
+        await syncNativeTask('insert', editingTask);
+        setTasks(prev => [...prev, editingTask]);
+        scheduleTaskNotification(editingTask);
+      } else {
+        await syncNativeTask('update', editingTask);
+        setTasks(prev => prev.map(t => t.id === editingTask.id ? editingTask : t));
+        scheduleTaskNotification(editingTask);
+      }
       setEditingTask(null);
+      setIsNewTask(false);
     }
   };
 
@@ -207,8 +223,26 @@ function App() {
   };
 
   const handleEditTask = (task: Task, date: string) => {
+    setIsNewTask(false);
     setEditingTask(task);
     setEditingDate(date);
+  };
+
+  const handleAddNewTask = () => {
+    setIsNewTask(true);
+    setEditingTask({
+      id: generateId(),
+      title: '',
+      start: '12:00',
+      end: '13:00',
+      category: 'Work',
+      priority: 1,
+      date: format(selectedDate, 'yyyy-MM-dd'),
+      reminderMinutes: 5,
+      recurring: { type: 'none' },
+      exceptions: []
+    } as Task);
+    setEditingDate(format(selectedDate, 'yyyy-MM-dd'));
   };
 
   return (
@@ -228,24 +262,6 @@ function App() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        {/* Quick Add Bar */}
-        <div className="flex gap-2">
-          <input 
-            value={quickAdd}
-            onChange={e => setQuickAdd(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleQuickAdd()}
-            placeholder="✨ AI Quick Add (e.g., 'Lunch at 1pm')" 
-            className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
-          />
-          <button 
-            onClick={handleQuickAdd}
-            disabled={loading}
-            className="p-3 bg-blue-600 text-white rounded-xl shadow-lg active:scale-95 transition-transform"
-          >
-            {loading ? <Loader2 className="animate-spin" /> : <RotateCw size={20} />}
-          </button>
-        </div>
-
         {/* Today Link */}
         <div className="flex justify-center">
           <button 
@@ -263,15 +279,34 @@ function App() {
       {/* Task Detail/Edit Modal */}
       {editingTask && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setEditingTask(null)}></div>
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => { setEditingTask(null); setIsNewTask(false); }}></div>
           <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-8 space-y-6 max-h-[85vh] overflow-y-auto">
               <div className="flex justify-between items-start">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Task Details</h2>
-                <button onClick={() => setEditingTask(null)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{isNewTask ? 'New Task' : 'Task Details'}</h2>
+                <button onClick={() => { setEditingTask(null); setIsNewTask(false); }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
                   <X size={20} className="text-slate-400" />
                 </button>
               </div>
+
+              {isNewTask && (
+                <div className="flex gap-2">
+                  <input 
+                    value={quickAdd}
+                    onChange={e => setQuickAdd(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleQuickAdd()}
+                    placeholder="✨ AI Quick Add..." 
+                    className="flex-1 bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  />
+                  <button 
+                    onClick={handleQuickAdd}
+                    disabled={loading}
+                    className="p-3 bg-blue-600 text-white rounded-xl shadow-lg active:scale-95 transition-transform"
+                  >
+                    {loading ? <Loader2 className="animate-spin" /> : <RotateCw size={20} />}
+                  </button>
+                </div>
+              )}
 
               <div className="space-y-4">
                 <div>
@@ -380,15 +415,15 @@ function App() {
               <div className="flex gap-3 pt-4">
                 <button 
                   onClick={() => handleDelete(editingTask.id, editingDate)}
-                  className="flex-1 bg-red-50 dark:bg-red-900/20 text-red-600 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all"
+                  className={`flex-1 ${isNewTask ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700' : 'bg-red-50 dark:bg-red-900/20 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30'} py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all`}
                 >
-                  <Trash2 size={18} /> Delete
+                  {isNewTask ? <><X size={18} /> Cancel</> : <><Trash2 size={18} /> Delete</>}
                 </button>
                 <button 
                   onClick={saveEditedTask}
                   className="flex-[2] bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-xl shadow-blue-500/40 active:scale-95 transition-all"
                 >
-                  Save Changes
+                  {isNewTask ? 'Add Task' : 'Save Changes'}
                 </button>
               </div>
             </div>
@@ -406,7 +441,7 @@ function App() {
         </button>
 
         <button 
-          onClick={() => document.querySelector<HTMLInputElement>('input')?.focus()}
+          onClick={handleAddNewTask}
           className="pointer-events-auto bg-blue-600 text-white p-5 rounded-full shadow-2xl shadow-blue-500/40 active:scale-95 transition-all hover:bg-blue-700"
         >
           <Plus size={32} />

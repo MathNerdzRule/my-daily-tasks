@@ -23,3 +23,9 @@
 - **Role**: Dev
 - **Action**: Replaced the previous `VITE_GEMINI_API_KEY` with a new key in the `.env` file (`AIzaSyDKvO...`). Verified that the API key is strictly maintained within `.env` and is not hard-coded in the project source (`services/gemini.ts` injects it via Vite). Rebuilt the web app, synced Capacitor assets, built the debug APK, and successfully ran wireless ADB deployment to the phone.
 - **Status**: Done.
+
+## Unified Task Modal & Quick Add
+
+- **Role**: Dev
+- **Action**: Converted the static AI Quick Add bar into the existing task details modal. The modal now serves a dual purpose for both creating new tasks and editing existing ones. Added a "Cancel" button for new tasks (replacing "Delete").
+- **Status**: Done.
