@@ -22,6 +22,7 @@ function App() {
   
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [loading, setLoading] = useState(false);
+  const [progressMessage, setProgressMessage] = useState<string | null>(null);
   const [quickAdd, setQuickAdd] = useState('');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editingDate, setEditingDate] = useState<string>('');
@@ -121,12 +122,14 @@ function App() {
 
       if (image.base64String) {
         setLoading(true);
+        setProgressMessage("Analyzing image to find tasks...");
         const newTasksData = await analyzeScheduleFromImage(image.base64String);
         const today = format(new Date(), 'yyyy-MM-dd');
         
         const filteredNewTasks: Task[] = [];
         
         for (const t of newTasksData) {
+           setProgressMessage(`Creating task "${t.title}"...`);
            const taskDate = t.date || today;
            
            // Check for duplicates (same title, same start time, same date)
@@ -163,6 +166,7 @@ function App() {
       }
     } finally {
       setLoading(false);
+      setProgressMessage(null);
     }
   };
 
@@ -437,6 +441,22 @@ function App() {
               </div>
               </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading/Progress Overlay */}
+      {progressMessage && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 shadow-2xl flex flex-col items-center gap-6 max-w-sm w-full outline outline-1 outline-slate-200 dark:outline-slate-800">
+            <div className="relative">
+              <div className="absolute inset-0 bg-blue-500 blur-xl opacity-30 rounded-full animate-pulse"></div>
+              <Loader2 size={48} className="text-blue-500 animate-spin relative z-10" />
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white">Working...</h3>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{progressMessage}</p>
             </div>
           </div>
         </div>

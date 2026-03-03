@@ -35,3 +35,9 @@
 - **Role**: Dev
 - **Action**: Converted the static AI Quick Add bar into the existing task details modal. The modal now serves a dual purpose for both creating new tasks and editing existing ones. Added a "Cancel" button for new tasks (replacing "Delete").
 - **Status**: Done.
+
+## Camera Task Creation Progress Modal
+
+- **Role**: Dev
+- **Action**: Added an animated loading modal to `App.tsx` that visually indicates when the app is analyzing an uploaded image or creating specific tasks. This provides real-time feedback during the AI metadata extraction process.
+- **Status**: Done. Built and pushed via ADB.
