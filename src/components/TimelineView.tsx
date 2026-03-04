@@ -12,8 +12,9 @@ export interface Task {
   date: string; // ISO date string
   reminderMinutes?: number; 
   recurring?: {
-    type: 'none' | 'daily' | 'weekdays' | 'custom';
+    type: 'none' | 'daily' | 'weekdays' | 'custom' | 'monthly' | 'monthly_weekday';
     days?: number[]; // 0-6 for Sun-Sat
+    nth?: number; // 1 to 5 for nth weekday
   };
   exceptions?: string[]; // ISO date strings
 }
@@ -53,6 +54,19 @@ export const TimelineView: React.FC<{
       if (t.recurring.type === 'daily') return true;
       if (t.recurring.type === 'weekdays' && dayOfWeek >= 1 && dayOfWeek <= 5) return true;
       if (t.recurring.type === 'custom' && t.recurring.days?.includes(dayOfWeek)) return true;
+      if (t.recurring.type === 'monthly') {
+        const taskDateObj = new Date(t.date + 'T00:00:00');
+        if (selectedDate.getDate() === taskDateObj.getDate()) return true;
+      }
+      if (t.recurring.type === 'monthly_weekday') {
+        const days = t.recurring.days || [new Date(t.date + 'T00:00:00').getDay()];
+        let nth = t.recurring.nth;
+        if (!nth) nth = Math.ceil(new Date(t.date + 'T00:00:00').getDate() / 7);
+        if (days.includes(dayOfWeek)) {
+          const currentNth = Math.ceil(selectedDate.getDate() / 7);
+          if (currentNth === nth) return true;
+        }
+      }
     }
 
     return false;

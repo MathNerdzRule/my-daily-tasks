@@ -207,6 +207,27 @@ function App() {
         setTasks(prev => [...prev, editingTask]);
         scheduleTaskNotification(editingTask);
       } else {
+        if (editingTask.recurring && editingTask.recurring.type !== 'none' && editingDate) {
+          const choice = confirm("Update only THIS instance? (Cancel to update the ENTIRE series)");
+          if (choice) {
+            // Find original task to add to exceptions
+            const originalTask = tasks.find(t => t.id === editingTask.id);
+            if (originalTask) {
+              const updatedOriginal = { ...originalTask, exceptions: [...(originalTask.exceptions || []), editingDate] };
+              await syncNativeTask('update', updatedOriginal);
+              
+              const newDetachedTask = { ...editingTask, id: generateId(), recurring: { type: 'none' as const }, date: editingDate, exceptions: [] };
+              await syncNativeTask('insert', newDetachedTask);
+              
+              setTasks(prev => [...prev.map(t => t.id === originalTask.id ? updatedOriginal : t), newDetachedTask]);
+              scheduleTaskNotification(newDetachedTask);
+            }
+            setEditingTask(null);
+            setIsNewTask(false);
+            return;
+          }
+        }
+
         await syncNativeTask('update', editingTask);
         setTasks(prev => prev.map(t => t.id === editingTask.id ? editingTask : t));
         scheduleTaskNotification(editingTask);
@@ -374,7 +395,9 @@ function App() {
                       { id: 'none', label: 'None' },
                       { id: 'daily', label: 'Daily' },
                       { id: 'weekdays', label: 'Weekdays' },
-                      { id: 'custom', label: 'Custom Days' }
+                      { id: 'custom', label: 'Custom Days' },
+                      { id: 'monthly', label: 'Monthly' },
+                      { id: 'monthly_weekday', label: 'Monthly (Weekday)' }
                     ].map((type) => (
                       <button
                         key={type.id}
@@ -382,7 +405,9 @@ function App() {
                           ...editingTask, 
                           recurring: { 
                             type: type.id as any, 
-                            days: type.id === 'custom' ? (editingTask.recurring?.days || []) : undefined 
+                            days: ['custom', 'monthly_weekday'].includes(type.id) 
+                                   ? (editingTask.recurring?.days || [new Date(editingDate || new Date()).getDay()]) 
+                                   : undefined 
                           }
                         })}
                         className={`py-2 rounded-xl text-xs font-bold transition-all ${editingTask.recurring?.type === type.id ? 'bg-amber-500 text-white shadow-lg' : 'bg-slate-50 dark:bg-slate-800 text-slate-500'}`}

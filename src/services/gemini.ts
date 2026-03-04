@@ -22,13 +22,16 @@ export async function parseTask(query: string) {
       "priority": 1 | 2 | 3,
       "date": "yyyy-MM-dd" (infer from query relative to current date, default to today),
       "recurring": {
-        "type": "none" | "daily" | "weekdays" | "custom",
-        "days": [0,1,2,3,4,5,6] (required if type is custom, 0 is Sunday)
+        "type": "none" | "daily" | "weekdays" | "custom" | "weekly" | "monthly" | "monthly_weekday",
+        "days": [0,1,2,3,4,5,6] (required if type is custom, weekly, or monthly_weekday. 0 is Sunday),
+        "nth": 1|2|3|4|5 (required if type is monthly_weekday, e.g. 1 for first Friday, 2 for second...)
       }
     }
     If the user mentions "every day" or "daily", use type "daily".
     If they mention "weekdays" or "mon-fri", use type "weekdays".
-    If they specify days like "every Monday", use type "custom" and days [1].
+    If they specify "every Monday", use type "custom" and days [1].
+    If they specify "15th of every month", use type "monthly".
+    If they specify "first Friday of every month", use type "monthly_weekday", days: [5], nth: 1.
     If duration isn't specified, default to 1 hour.
     Return ONLY the JSON.
   `;
