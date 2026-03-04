@@ -137,7 +137,7 @@ export const TimelineView: React.FC<{
         <div className="relative h-[1440px] w-full">
           {hours.map(h => (
             <div key={h} className="absolute w-full border-t border-slate-200 dark:border-slate-800 flex items-center" style={{ top: h * 60, height: 60 }}>
-              <span className="text-[10px] text-slate-400 ml-2 -mt-[50px] w-10 text-right pr-2 font-medium">
+              <span className="text-[10px] text-slate-400 ml-2 -mt-[50px] w-12 text-right pr-2 font-medium">
                 {h === 0 ? '12 AM' : h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`}
               </span>
               <div className="w-full h-px bg-slate-100 dark:bg-slate-800/30"></div>
@@ -153,7 +153,7 @@ export const TimelineView: React.FC<{
               <div
                 key={task.id}
                 onClick={() => onEdit(task, dateKey)}
-                className={`absolute left-14 right-2 rounded-xl border-l-4 p-3 cursor-pointer shadow-md hover:brightness-95 transition-all group ${styleClass}`}
+                className={`absolute left-16 right-2 rounded-xl border-l-4 p-3 cursor-pointer shadow-md hover:brightness-95 transition-all group ${styleClass}`}
                 style={{ top, height }}
               >
                 <div className="flex justify-between items-start">
@@ -170,7 +170,7 @@ export const TimelineView: React.FC<{
           {/* Current Time Indicator */}
           {dateKey === format(new Date(), 'yyyy-MM-dd') && (
             <div 
-              className="absolute left-14 right-0 border-t-2 border-red-500 z-10 flex items-center"
+              className="absolute left-16 right-0 border-t-2 border-red-500 z-10 flex items-center"
               style={{ top: getPosition(format(new Date(), 'HH:mm')) }}
             >
               <div className="w-2 h-2 bg-red-500 rounded-full -ml-1"></div>

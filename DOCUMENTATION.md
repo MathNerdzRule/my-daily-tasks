@@ -47,3 +47,9 @@
 - **Role**: Dev
 - **Action**: Modified `gemini.ts` to support `monthly` and `monthly_weekday` recurrence types. Updated `TimelineView.tsx` and `TasksRemoteViewsFactory.java` to filter and display these recurring dates accurately based on their origin date. In `App.tsx`, implemented an edit option for recurring tasks that prompts the user to either update just that single occurrence (by adding an exception and spawning a new detached task) or update the entire series.
 - **Status**: Done. Built and deployed via ADB.
+
+## Timeline UI Polish
+
+- **Role**: Dev
+- **Action**: Widened the time label column in the `TimelineView.tsx` from 40px (`w-10`) to 48px (`w-12`), and shifted the tasks start position from 56px (`left-14`) to 64px (`left-16`) to provide more breathing room for times like "12 AM", preventing text wrapping onto two lines.
+- **Status**: Done. Built and deployed via ADB.
