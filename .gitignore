@@ -6,3 +6,4 @@ android/
 ios/
 coverage/
 *.local
+.aistudio

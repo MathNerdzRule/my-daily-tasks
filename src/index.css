@@ -2,41 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --bg-color: #f8fafc;
-  --text-color: #0f172a;
-  --primary: #3b82f6;
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.5);
+@layer base {
+  :root {
+    --md-sys-color-background: #fdfcff;
+    --md-sys-color-on-background: #1a1c1e;
+    --md-sys-color-surface: #fdfcff;
+    --md-sys-color-surface-container: #edf0f7;
+    --md-sys-color-surface-container-high: #e2e7ef;
+    --md-sys-color-primary: #00639b;
+    --md-sys-color-on-primary: #ffffff;
+    --md-sys-color-primary-container: #cce5ff;
+    --md-sys-color-on-primary-container: #001d32;
+    --md-sys-color-secondary-container: #d9e3f8;
+    --md-sys-color-on-secondary-container: #101c2b;
+    --md-sys-color-outline: #727782;
+    --md-sys-color-outline-variant: #c2c7cf;
+  }
+
+  .dark {
+    --md-sys-color-background: #111318;
+    --md-sys-color-on-background: #e2e2e6;
+    --md-sys-color-surface: #111318;
+    --md-sys-color-surface-container: #1e2025;
+    --md-sys-color-surface-container-high: #282a30;
+    --md-sys-color-primary: #92ccff;
+    --md-sys-color-on-primary: #003353;
+    --md-sys-color-primary-container: #004a75;
+    --md-sys-color-on-primary-container: #cce5ff;
+    --md-sys-color-secondary-container: #3c4758;
+    --md-sys-color-on-secondary-container: #d9e3f8;
+    --md-sys-color-outline: #8c919a;
+    --md-sys-color-outline-variant: #424750;
+  }
+
+  body {
+    @apply bg-[#F8FAFC] dark:bg-[#111318] text-[#191C1E] dark:text-[#E2E2E6] font-sans antialiased transition-colors duration-200 selection:bg-blue-100 selection:text-blue-900;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
-.dark {
-  --bg-color: #0f172a;
-  --text-color: #f8fafc;
-  --glass-bg: rgba(15, 23, 42, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.1);
+/* Material You Elevation / Container Classes */
+.m3-surface-container {
+  @apply bg-[#F1F4F9] dark:bg-[#1E2025] border border-slate-200/60 dark:border-white/5;
 }
 
-body {
-  @apply bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-50;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
+.m3-surface-container-high {
+  @apply bg-[#E9EEF6] dark:bg-[#282A30];
 }
 
-.glass {
-  @apply bg-white/70 backdrop-blur-md border border-white/50 shadow-lg dark:bg-slate-900/70 dark:border-white/10;
+.m3-card {
+  @apply bg-white dark:bg-[#1E2025] border border-slate-200/80 dark:border-white/5 shadow-sm rounded-[24px] transition-all;
 }
 
-.btn-primary {
-  @apply bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow-lg shadow-blue-500/30 active:scale-95 transition-transform;
+.m3-primary-btn {
+  @apply bg-[#00639B] hover:bg-[#005180] text-white dark:bg-[#92CCFF] dark:hover:bg-[#B3DBFF] dark:text-[#003353] font-medium rounded-full shadow-md active:scale-95 transition-all;
 }
 
-.pulse {
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.1); opacity: 0.8; }
-  100% { transform: scale(1); opacity: 1; }
+.m3-tonal-btn {
+  @apply bg-[#D9E3F8] hover:bg-[#CAD8F4] text-[#101C2B] dark:bg-[#3C4758] dark:hover:bg-[#4A576C] dark:text-[#D9E3F8] font-medium rounded-full active:scale-95 transition-all;
 }

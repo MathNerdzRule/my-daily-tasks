@@ -31,22 +31,23 @@ export const ThemeSwitcher: React.FC = () => {
   }, [theme]);
 
   return (
-    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl gap-1">
+    <div className="flex bg-[#E9EEF6] dark:bg-[#282A30] p-1 rounded-full border border-slate-200/50 dark:border-white/5 gap-0.5">
       {[
-        { id: 'light', icon: Sun },
-        { id: 'system', icon: Monitor },
-        { id: 'dark', icon: Moon }
+        { id: 'light', icon: Sun, label: 'Light' },
+        { id: 'system', icon: Monitor, label: 'System' },
+        { id: 'dark', icon: Moon, label: 'Dark' }
       ].map((t) => (
         <button
           key={t.id}
           onClick={() => setTheme(t.id as any)}
-          className={`p-1.5 rounded-lg transition-all ${
+          title={`Switch to ${t.label} theme`}
+          className={`p-1.5 rounded-full transition-all flex items-center justify-center ${
             theme === t.id 
-              ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' 
-              : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+              ? 'bg-[#00639B] text-white dark:bg-[#92CCFF] dark:text-[#003353] shadow-sm' 
+              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
         >
-          <t.icon size={16} />
+          <t.icon size={15} />
         </button>
       ))}
     </div>

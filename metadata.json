@@ -1,0 +1,6 @@
+{
+  "name": "My Daily Tasks",
+  "description": "Smart daily task planner and schedule organizer with AI-powered task parsing and schedule recognition.",
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
