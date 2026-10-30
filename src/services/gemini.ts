@@ -22,7 +22,8 @@ export interface SampleImageInfo {
 }
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
-const MODELS_TO_TRY = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-3-flash-preview'];
+const MODELS_TO_TRY = ['gemini-3-flash-preview', 'gemini-3.8-flash', 'gemini-3.1-flash-lite'];
+const MODEL_TIMEOUT_MS = 45000;
 
 function buildSchedulePrompt(nowStr: string): string {
   return `
@@ -81,11 +82,16 @@ async function analyzeScheduleOnDevice(base64Image: string, mimeType: string): P
   let lastError: unknown = null;
   for (const model of MODELS_TO_TRY) {
     try {
-      const response = await ai.models.generateContent({
-        model,
-        contents: [{ inlineData: { data: cleanBase64, mimeType } }, prompt],
-        config: { responseMimeType: 'application/json' },
-      });
+      const response = await Promise.race([
+        ai.models.generateContent({
+          model,
+          contents: [{ inlineData: { data: cleanBase64, mimeType } }, prompt],
+          config: { responseMimeType: 'application/json' },
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`${model} timed out after ${MODEL_TIMEOUT_MS / 1000}s`)), MODEL_TIMEOUT_MS)
+        ),
+      ]);
       const cleanJson = (response.text || '').replace(/```json|```/g, '').trim();
       return { events: JSON.parse(cleanJson), modelUsed: model };
     } catch (err) {
