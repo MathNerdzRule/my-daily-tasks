@@ -24,6 +24,9 @@ export interface SampleImageInfo {
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
 const MODELS_TO_TRY = ['gemini-3-flash-preview', 'gemini-3.8-flash', 'gemini-3.1-flash-lite'];
 const MODEL_TIMEOUT_MS = 45000;
+const ANTHROPIC_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY as string | undefined;
+const CLAUDE_MODEL = 'claude-sonnet-5-5';
+const CLAUDE_TIMEOUT_MS = 60000;
 
 function buildSchedulePrompt(nowStr: string): string {
   return `
@@ -63,6 +66,50 @@ Return ONLY a JSON array of objects with the following schema:
   }
 ]
 `;
+}
+
+function currentTimeContext(): string {
+  return new Date().toLocaleString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+}
+
+async function analyzeScheduleWithClaude(base64Image: string, mimeType: string): Promise<AnalysisResponse> {
+  const { default: Anthropic } = await import('@anthropic-ai/sdk');
+  const client = new Anthropic({
+    apiKey: ANTHROPIC_KEY,
+    dangerouslyAllowBrowser: true,
+    timeout: CLAUDE_TIMEOUT_MS,
+    maxRetries: 0,
+  });
+  const cleanBase64 = base64Image.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+  const response = await client.messages.create({
+    model: CLAUDE_MODEL,
+    max_tokens: 8000,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: mimeType as 'image/jpeg', data: cleanBase64 } },
+          { type: 'text', text: buildSchedulePrompt(currentTimeContext()) },
+        ],
+      },
+    ],
+  });
+  const text = response.content
+    .filter((block): block is Extract<typeof block, { type: 'text' }> => block.type === 'text')
+    .map(block => block.text)
+    .join('')
+    .replace(/```json|```/g, '')
+    .trim();
+  const arrayMatch = text.match(/\[[\s\S]*\]/);
+  return { events: JSON.parse(arrayMatch ? arrayMatch[0] : text), modelUsed: CLAUDE_MODEL };
 }
 
 async function analyzeScheduleOnDevice(base64Image: string, mimeType: string): Promise<AnalysisResponse> {
@@ -106,6 +153,13 @@ export async function analyzeScheduleFromImage(
   base64Image: string,
   mimeType: string = 'image/jpeg'
 ): Promise<AnalysisResponse> {
+  if (ANTHROPIC_KEY) {
+    try {
+      return await analyzeScheduleWithClaude(base64Image, mimeType);
+    } catch (err) {
+      console.warn('Claude scan failed, falling back to Gemini:', err);
+    }
+  }
   if (API_KEY) return analyzeScheduleOnDevice(base64Image, mimeType);
 
   const response = await fetch('/api/analyze-schedule', {

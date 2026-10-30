@@ -209,7 +209,7 @@ export const EventListView: React.FC<EventListViewProps> = ({
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-1">
               {events.length === 0 
-                ? 'Take a photo of your schedule screen or single event timestamp above. Gemini 3.8 Flash will parse and store them locally.'
+                ? 'Take a photo of your schedule screen or single event timestamp above. Claude Sonnet 5.5 will parse and store them locally.'
                 : 'Try adjusting your search query or switching to the "All" filter.'}
             </p>
           </div>

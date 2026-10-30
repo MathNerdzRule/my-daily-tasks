@@ -124,7 +124,7 @@ export function App() {
   };
 
   /**
-   * Process parsed events from Gemini 3.8 Flash and de-duplicate against existing store
+   * Process parsed events from Claude Sonnet 5.5 and de-duplicate against existing store
    */
   const handleParsedEvents = (parsedList: ParsedEvent[], modelUsed: string, previewUrl?: string) => {
     if (!Array.isArray(parsedList) || parsedList.length === 0) {
@@ -285,7 +285,7 @@ export function App() {
 
   const processBase64Image = async (base64String: string, mimeType: string, previewUrl?: string) => {
     setLoading(true);
-    setProgressStep('Analyzing schedule image with Gemini 3.8 Flash...');
+    setProgressStep('Analyzing schedule image...');
 
     try {
       const result = await analyzeScheduleFromImage(base64String, mimeType);
@@ -309,7 +309,7 @@ export function App() {
 
     try {
       const { base64, previewUrl } = await compressImage(sample.url, 1600);
-      setProgressStep(`Analyzing "${sample.title}" with Gemini 3.8 Flash...`);
+      setProgressStep(`Analyzing "${sample.title}" ...`);
       const result = await analyzeScheduleFromImage(base64, 'image/jpeg');
       setProgressStep('Filtering duplicates and storing events locally...');
       handleParsedEvents(result.events, result.modelUsed, previewUrl);
@@ -375,7 +375,7 @@ export function App() {
                 My Daily Tasks
               </h1>
               <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                Photo Schedule Lens • Gemini 3.8 Flash
+                Photo Schedule Lens • Claude Sonnet 5.5
               </p>
             </div>
           </div>
@@ -423,7 +423,7 @@ export function App() {
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-[#E8F1FC] dark:bg-[#004A74]/50 text-[#00639B] dark:text-[#92CCFF]">
                   AI Schedule Scanner
                 </span>
-                <span className="text-[11px] font-medium text-slate-400">Gemini 3.8 Flash</span>
+                <span className="text-[11px] font-medium text-slate-400">Claude Sonnet 5.5</span>
               </div>
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mt-1">
                 Capture Calendar or Single Event
@@ -527,7 +527,7 @@ export function App() {
                 Reading Image...
               </h3>
               <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                {progressStep || 'Gemini 3.8 Flash is extracting schedule events...'}
+                {progressStep || 'Extracting schedule events...'}
               </p>
             </div>
           </div>
