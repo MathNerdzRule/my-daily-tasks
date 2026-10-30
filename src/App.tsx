@@ -21,6 +21,7 @@ import {
   ParsedEvent 
 } from './services/gemini';
 import { format } from 'date-fns';
+import { syncEventNotifications, testNotificationNow } from './services/notifications';
 
 interface ConfirmDialogState {
   title: string;
@@ -105,6 +106,10 @@ export function App() {
   useEffect(() => {
     localStorage.setItem('stored_calendar_events', JSON.stringify(events));
     Preferences.set({ key: 'stored_calendar_events', value: JSON.stringify(events) }).catch(() => {});
+  }, [events]);
+
+  useEffect(() => {
+    syncEventNotifications(events);
   }, [events]);
 
   // Clean title for deduplication comparison
@@ -482,11 +487,22 @@ export function App() {
             <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Stored Events ({events.length})
             </h3>
-            {events.length > 0 && (
-              <span className="text-xs text-slate-400 font-medium">
-                Saved locally on this device
-              </span>
-            )}
+            <div className="flex items-center gap-3">
+              {events.length > 0 && (
+                <span className="text-xs text-slate-400 font-medium">
+                  Saved locally on this device
+                </span>
+              )}
+              <button
+                onClick={async () => {
+                  await testNotificationNow();
+                  showToast('Test alert coming in about 3 seconds', 'info');
+                }}
+                className="text-xs font-semibold text-[#00639B] dark:text-[#92CCFF] underline underline-offset-2"
+              >
+                Test alert
+              </button>
+            </div>
           </div>
 
           <EventListView

@@ -1,5 +1,6 @@
 import { LocalNotifications, PendingResult } from '@capacitor/local-notifications';
 import { Task } from '../components/TimelineView';
+import { StoredEvent } from '../components/EventListView';
 import { parse, subMinutes, getHours, getMinutes } from 'date-fns';
 
 export async function requestNotificationPermission(): Promise<void> {
@@ -132,6 +133,44 @@ export async function testNotificationNow(): Promise<void> {
     });
   } catch (e) {
     console.warn("Test notification failed:", e);
+  }
+}
+
+function eventNotificationId(eventId: string): number {
+  let hash = 0;
+  for (let i = 0; i < eventId.length; i++) {
+    hash = (hash * 31 + eventId.charCodeAt(i)) | 0;
+  }
+  return (Math.abs(hash) % 2000000000) + 1;
+}
+
+export async function syncEventNotifications(events: StoredEvent[], reminderMinutes: number = 5): Promise<void> {
+  try {
+    await requestNotificationPermission();
+
+    const pending = await LocalNotifications.getPending().catch(() => ({ notifications: [] }));
+    if (pending.notifications.length > 0) {
+      await LocalNotifications.cancel({ notifications: pending.notifications.map(n => ({ id: n.id })) }).catch(() => null);
+    }
+
+    const now = Date.now();
+    const notifications = events.flatMap(event => {
+      const reminderTime = subMinutes(parse(`${event.date} ${event.start}`, 'yyyy-MM-dd HH:mm', new Date()), reminderMinutes);
+      if (isNaN(reminderTime.getTime()) || reminderTime.getTime() <= now) return [];
+      return [{
+        title: event.title,
+        body: `Starts in ${reminderMinutes}m${event.location ? ` • ${event.location}` : ''}`,
+        id: eventNotificationId(event.id),
+        schedule: { at: reminderTime, allowWhileIdle: true },
+        channelId: 'task-reminders',
+      }];
+    });
+
+    if (notifications.length > 0) {
+      await LocalNotifications.schedule({ notifications });
+    }
+  } catch (e) {
+    console.warn("Sync event notifications skipped or not supported:", e);
   }
 }
 
