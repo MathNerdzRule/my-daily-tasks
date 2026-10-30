@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Clock, MapPin, Trash2, Copy, Check, Calendar, X } from 'lucide-react';
+import { Search, Clock, MapPin, Trash2, Pencil, Calendar, X } from 'lucide-react';
 import { format, parseISO, isToday, isThisWeek } from 'date-fns';
 
 export interface StoredEvent {
@@ -17,17 +17,19 @@ export interface StoredEvent {
 interface EventListViewProps {
   events: StoredEvent[];
   onDeleteEvent: (id: string) => void;
+  onUpdateEvent: (event: StoredEvent) => void;
   onClearAll: () => void;
 }
 
 export const EventListView: React.FC<EventListViewProps> = ({
   events,
   onDeleteEvent,
+  onUpdateEvent,
   onClearAll,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'today' | 'week' | 'upcoming'>('all');
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<'today' | 'week' | 'upcoming'>('upcoming');
+  const [editing, setEditing] = useState<StoredEvent | null>(null);
 
   // Time formatting helper
   const formatTime12h = (time24: string) => {
@@ -67,9 +69,6 @@ export const EventListView: React.FC<EventListViewProps> = ({
         event.date.includes(searchQuery);
 
       if (!matchesSearch) return false;
-
-      // Filter matching
-      if (activeFilter === 'all') return true;
 
       try {
         const eventDateObj = parseISO(event.date + 'T00:00:00');
@@ -115,12 +114,18 @@ export const EventListView: React.FC<EventListViewProps> = ({
     }));
   }, [filteredEvents]);
 
-  const handleCopy = (event: StoredEvent) => {
-    const text = `${event.title} • ${event.date} • ${formatTime12h(event.start)} - ${formatTime12h(event.end)}${event.location ? ` • ${event.location}` : ''}`;
-    navigator.clipboard?.writeText(text).then(() => {
-      setCopiedId(event.id);
-      setTimeout(() => setCopiedId(null), 2000);
+  const canSaveEdit = !!editing && editing.title.trim() !== '' && editing.date !== '' && editing.start !== '';
+
+  const handleSaveEdit = () => {
+    if (!editing || !canSaveEdit) return;
+    onUpdateEvent({
+      ...editing,
+      title: editing.title.trim(),
+      end: editing.end || editing.start,
+      location: editing.location?.trim() ?? '',
+      notes: editing.notes?.trim() ?? '',
     });
+    setEditing(null);
   };
 
   const formatDateHeader = (dateStr: string) => {
@@ -164,7 +169,6 @@ export const EventListView: React.FC<EventListViewProps> = ({
         <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 no-scrollbar">
           <div className="flex items-center gap-1.5">
             {[
-              { id: 'all', label: 'All' },
               { id: 'today', label: 'Today' },
               { id: 'week', label: 'This Week' },
               { id: 'upcoming', label: 'Upcoming' },
@@ -209,8 +213,8 @@ export const EventListView: React.FC<EventListViewProps> = ({
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-1">
               {events.length === 0 
-                ? 'Take a photo of your schedule screen or single event timestamp above. Claude Sonnet 5.5 will parse and store them locally.'
-                : 'Try adjusting your search query or switching to the "All" filter.'}
+                ? 'Take a photo of your schedule screen or a single event above to add events.'
+                : 'Try adjusting your search query or switching filters.'}
             </p>
           </div>
         </div>
@@ -286,21 +290,12 @@ export const EventListView: React.FC<EventListViewProps> = ({
                         {/* Event Actions */}
                         <div className="flex items-center gap-1 self-end sm:self-center shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-white/5 w-full sm:w-auto justify-end">
                           <button
-                            onClick={() => handleCopy(event)}
-                            title="Copy event summary"
+                            onClick={() => setEditing({ ...event })}
+                            title="Edit this event"
                             className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#282A30] rounded-full transition-colors flex items-center gap-1 text-xs font-medium"
                           >
-                            {copiedId === event.id ? (
-                              <>
-                                <Check size={15} className="text-emerald-500" />
-                                <span className="text-emerald-600 dark:text-emerald-400 sm:hidden">Copied</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy size={15} />
-                                <span className="sm:hidden">Copy</span>
-                              </>
-                            )}
+                            <Pencil size={15} />
+                            <span className="sm:hidden">Edit</span>
                           </button>
 
                           <button
@@ -319,6 +314,85 @@ export const EventListView: React.FC<EventListViewProps> = ({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {editing && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#1E2025] rounded-[28px] p-5 shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-white/10 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Edit Event</h3>
+              <button
+                onClick={() => setEditing(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {[
+              { key: 'title', label: 'Title', type: 'text' },
+              { key: 'date', label: 'Date', type: 'date' },
+            ].map((field) => (
+              <label key={field.key} className="block space-y-1">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{field.label}</span>
+                <input
+                  type={field.type}
+                  value={(editing as any)[field.key] ?? ''}
+                  onChange={(e) => setEditing({ ...editing, [field.key]: e.target.value })}
+                  className="w-full bg-[#EEF1F6] dark:bg-[#282A2F] text-[#191C1E] dark:text-[#E2E2E6] px-4 py-2.5 rounded-2xl border border-transparent focus:border-[#00639B] dark:focus:border-[#92CCFF] text-sm font-medium outline-none"
+                />
+              </label>
+            ))}
+
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { key: 'start', label: 'Start' },
+                { key: 'end', label: 'End' },
+              ].map((field) => (
+                <label key={field.key} className="block space-y-1">
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{field.label}</span>
+                  <input
+                    type="time"
+                    value={(editing as any)[field.key] ?? ''}
+                    onChange={(e) => setEditing({ ...editing, [field.key]: e.target.value })}
+                    className="w-full bg-[#EEF1F6] dark:bg-[#282A2F] text-[#191C1E] dark:text-[#E2E2E6] px-4 py-2.5 rounded-2xl border border-transparent focus:border-[#00639B] dark:focus:border-[#92CCFF] text-sm font-medium outline-none"
+                  />
+                </label>
+              ))}
+            </div>
+
+            {[
+              { key: 'location', label: 'Location' },
+              { key: 'notes', label: 'Notes' },
+            ].map((field) => (
+              <label key={field.key} className="block space-y-1">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{field.label}</span>
+                <input
+                  type="text"
+                  value={(editing as any)[field.key] ?? ''}
+                  onChange={(e) => setEditing({ ...editing, [field.key]: e.target.value })}
+                  className="w-full bg-[#EEF1F6] dark:bg-[#282A2F] text-[#191C1E] dark:text-[#E2E2E6] px-4 py-2.5 rounded-2xl border border-transparent focus:border-[#00639B] dark:focus:border-[#92CCFF] text-sm font-medium outline-none"
+                />
+              </label>
+            ))}
+
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setEditing(null)}
+                className="flex-1 py-3 rounded-full text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-[#282A30]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={!canSaveEdit}
+                className="flex-1 py-3 rounded-full text-sm font-bold text-white dark:text-[#003353] bg-[#00639B] dark:bg-[#92CCFF] disabled:opacity-40"
+              >
+                Save
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

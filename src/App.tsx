@@ -21,7 +21,7 @@ import {
   ParsedEvent 
 } from './services/gemini';
 import { format } from 'date-fns';
-import { syncEventNotifications, testNotificationNow } from './services/notifications';
+import { syncEventNotifications } from './services/notifications';
 
 interface ConfirmDialogState {
   title: string;
@@ -338,6 +338,11 @@ export function App() {
     });
   };
 
+  const handleUpdateEvent = (updated: StoredEvent) => {
+    setEvents(prev => prev.map(e => (e.id === updated.id ? updated : e)));
+    showToast('Event updated', 'success');
+  };
+
   const handleClearAll = () => {
     setConfirmDialog({
       title: 'Clear All Events',
@@ -374,9 +379,6 @@ export function App() {
               <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
                 My Daily Tasks
               </h1>
-              <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                Photo Schedule Lens • Claude Sonnet 5.5
-              </p>
             </div>
           </div>
 
@@ -419,18 +421,9 @@ export function App() {
         <section className="bg-white dark:bg-[#1E2025] rounded-[28px] p-5 sm:p-6 border border-slate-200/80 dark:border-white/5 shadow-sm space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-[#E8F1FC] dark:bg-[#004A74]/50 text-[#00639B] dark:text-[#92CCFF]">
-                  AI Schedule Scanner
-                </span>
-                <span className="text-[11px] font-medium text-slate-400">Claude Sonnet 5.5</span>
-              </div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mt-1">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                 Capture Calendar or Single Event
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Take a photo of your screen to read schedule dates and times. Automatically extracts single timestamps and multi-day weekly views, ignoring duplicate events.
-              </p>
             </div>
           </div>
 
@@ -483,31 +476,10 @@ export function App() {
 
         {/* Saved Events List */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between px-1">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Stored Events ({events.length})
-            </h3>
-            <div className="flex items-center gap-3">
-              {events.length > 0 && (
-                <span className="text-xs text-slate-400 font-medium">
-                  Saved locally on this device
-                </span>
-              )}
-              <button
-                onClick={async () => {
-                  await testNotificationNow();
-                  showToast('Test alert coming in about 3 seconds', 'info');
-                }}
-                className="text-xs font-semibold text-[#00639B] dark:text-[#92CCFF] underline underline-offset-2"
-              >
-                Test alert
-              </button>
-            </div>
-          </div>
-
           <EventListView
             events={events}
             onDeleteEvent={handleDeleteEvent}
+            onUpdateEvent={handleUpdateEvent}
             onClearAll={handleClearAll}
           />
         </section>
