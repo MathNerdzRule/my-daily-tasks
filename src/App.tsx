@@ -497,21 +497,6 @@ export function App() {
         </section>
       </main>
 
-      {/* Material 3 Extended Floating Action Button */}
-      <div 
-        className="fixed bottom-6 left-0 right-0 flex justify-center items-center pointer-events-none z-30 px-6"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-      >
-        <button
-          onClick={handleScanWithCamera}
-          disabled={loading}
-          className="pointer-events-auto flex items-center gap-2.5 bg-[#00639B] hover:bg-[#005180] dark:bg-[#92CCFF] dark:hover:bg-[#B3DBFF] text-white dark:text-[#003353] px-6 py-3.5 rounded-full shadow-xl shadow-blue-900/20 active:scale-95 transition-all text-sm font-bold border border-white/20 group"
-        >
-          <CameraIcon size={20} className="group-hover:rotate-12 transition-transform duration-200" />
-          <span>Take Photo</span>
-        </button>
-      </div>
-
       {/* Loading & Scanning Modal */}
       {loading && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
