@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Clock, MapPin, Trash2, Pencil, Calendar, X } from 'lucide-react';
 import { format, parseISO, isToday, isThisWeek } from 'date-fns';
+import { normalizeTitle } from '../services/eventUtils';
 
 export interface StoredEvent {
   id: string;
@@ -17,19 +18,20 @@ export interface StoredEvent {
 interface EventListViewProps {
   events: StoredEvent[];
   onDeleteEvent: (id: string) => void;
-  onUpdateEvent: (event: StoredEvent) => void;
+  onUpdateEvents: (events: StoredEvent[]) => void;
   onClearAll: () => void;
 }
 
 export const EventListView: React.FC<EventListViewProps> = ({
   events,
   onDeleteEvent,
-  onUpdateEvent,
+  onUpdateEvents,
   onClearAll,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'today' | 'week' | 'upcoming'>('upcoming');
   const [editing, setEditing] = useState<StoredEvent | null>(null);
+  const [applyToSeries, setApplyToSeries] = useState(true);
 
   // Time formatting helper
   const formatTime12h = (time24: string) => {
@@ -116,15 +118,33 @@ export const EventListView: React.FC<EventListViewProps> = ({
 
   const canSaveEdit = !!editing && editing.title.trim() !== '' && editing.date !== '' && editing.start !== '';
 
+  const original = editing ? events.find(e => e.id === editing.id) : undefined;
+  const seriesMatches = original
+    ? events.filter(e => e.id !== original.id && e.start === original.start && normalizeTitle(e.title) === normalizeTitle(original.title))
+    : [];
+
   const handleSaveEdit = () => {
     if (!editing || !canSaveEdit) return;
-    onUpdateEvent({
+    const draft: StoredEvent = {
       ...editing,
       title: editing.title.trim(),
       end: editing.end || editing.start,
       location: editing.location?.trim() ?? '',
       notes: editing.notes?.trim() ?? '',
-    });
+    };
+    const updated: StoredEvent[] = [draft];
+    if (original && applyToSeries && seriesMatches.length > 0) {
+      const changes: Record<string, string> = {};
+      for (const key of ['title', 'start', 'end', 'location', 'notes'] as const) {
+        if ((original[key] ?? '') !== (draft[key] ?? '')) changes[key] = draft[key] ?? '';
+      }
+      if (Object.keys(changes).length > 0) {
+        for (const match of seriesMatches) {
+          updated.push({ ...match, ...changes } as StoredEvent);
+        }
+      }
+    }
+    onUpdateEvents(updated);
     setEditing(null);
   };
 
@@ -290,7 +310,10 @@ export const EventListView: React.FC<EventListViewProps> = ({
                         {/* Event Actions */}
                         <div className="flex items-center gap-1 self-end sm:self-center shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-white/5 w-full sm:w-auto justify-end">
                           <button
-                            onClick={() => setEditing({ ...event })}
+                            onClick={() => {
+                              setApplyToSeries(true);
+                              setEditing({ ...event });
+                            }}
                             title="Edit this event"
                             className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#282A30] rounded-full transition-colors flex items-center gap-1 text-xs font-medium"
                           >
@@ -376,6 +399,20 @@ export const EventListView: React.FC<EventListViewProps> = ({
                 />
               </label>
             ))}
+
+            {seriesMatches.length > 0 && original && (
+              <label className="flex items-start gap-3 p-3 rounded-2xl bg-[#EEF1F6] dark:bg-[#282A2F] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={applyToSeries}
+                  onChange={(e) => setApplyToSeries(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-[#00639B]"
+                />
+                <span className="text-xs font-medium text-slate-700 dark:text-slate-200">
+                  Apply changes to the {seriesMatches.length} other {seriesMatches.length === 1 ? 'event' : 'events'} titled "{original.title}" at {formatTime12h(original.start)}
+                </span>
+              </label>
+            )}
 
             <div className="flex gap-3 pt-1">
               <button

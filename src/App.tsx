@@ -22,6 +22,7 @@ import {
 } from './services/gemini';
 import { format } from 'date-fns';
 import { syncEventNotifications } from './services/notifications';
+import { normalizeTitle } from './services/eventUtils';
 
 interface ConfirmDialogState {
   title: string;
@@ -111,17 +112,6 @@ export function App() {
   useEffect(() => {
     syncEventNotifications(events);
   }, [events]);
-
-  // Clean title for deduplication comparison
-  const normalizeTitle = (title: string) => {
-    return title
-      .toLowerCase()
-      .replace(/^(fw:|re:)\s*/i, '')
-      .replace(/microsoft teams meeting|teams meeting/gi, '')
-      .replace(/[^\w\s]/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
-  };
 
   /**
    * Process parsed events from Claude Sonnet 5.5 and de-duplicate against existing store
@@ -338,9 +328,10 @@ export function App() {
     });
   };
 
-  const handleUpdateEvent = (updated: StoredEvent) => {
-    setEvents(prev => prev.map(e => (e.id === updated.id ? updated : e)));
-    showToast('Event updated', 'success');
+  const handleUpdateEvents = (updatedList: StoredEvent[]) => {
+    const updatedById = new Map(updatedList.map(e => [e.id, e]));
+    setEvents(prev => prev.map(e => updatedById.get(e.id) ?? e));
+    showToast(updatedList.length > 1 ? `Updated ${updatedList.length} events` : 'Event updated', 'success');
   };
 
   const handleClearAll = () => {
@@ -479,7 +470,7 @@ export function App() {
           <EventListView
             events={events}
             onDeleteEvent={handleDeleteEvent}
-            onUpdateEvent={handleUpdateEvent}
+            onUpdateEvents={handleUpdateEvents}
             onClearAll={handleClearAll}
           />
         </section>
